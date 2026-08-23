@@ -1,0 +1,20 @@
+{
+  "name": "Flexus.UIInspector.Samples.Editor",
+  "rootNamespace": "Flexus.Inspector.Samples.Editor",
+  "references": [
+    "Flexus.UIInspector.Runtime",
+    "Flexus.UIInspector.Editor",
+    "Flexus.UIInspector.Samples"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
