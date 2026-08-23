@@ -1,0 +1,24 @@
+{
+  "name": "com.flexus.inspector",
+  "displayName": "FLEXUS Inspector",
+  "version": "1.0.0",
+  "unity": "6000.0",
+  "description": "A minimal, extensible Unity-style UI Toolkit inspector with rich collections and polymorphic references.",
+  "author": "Idegeron (https://github.com/Idegeron)",
+  "dependencies": {
+    "com.unity.modules.animation": "1.0.0"
+  },
+  "keywords": [
+    "inspector",
+    "ui-toolkit",
+    "editor",
+    "attributes"
+  ],
+  "samples": [
+    {
+      "displayName": "Feature Samples",
+      "description": "Examples for the built-in attributes and extension API.",
+      "path": "Samples~/FeatureSamples"
+    }
+  ]
+}
