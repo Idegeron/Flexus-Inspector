@@ -1,0 +1,27 @@
+{
+  "name": "Flexus.UIInspector.Editor.Integrations.FlexusSerialization",
+  "rootNamespace": "Flexus.Inspector.Editor.Integrations",
+  "references": [
+    "Flexus.UIInspector.Editor",
+    "Flexus.Serialization"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "FLEXUS_INSPECTOR_SERIALIZATION"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.flexus.serialization",
+      "expression": "1.0.0",
+      "define": "FLEXUS_INSPECTOR_SERIALIZATION"
+    }
+  ],
+  "noEngineReferences": false
+}

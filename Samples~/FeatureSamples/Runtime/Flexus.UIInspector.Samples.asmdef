@@ -1,0 +1,16 @@
+{
+  "name": "Flexus.UIInspector.Samples",
+  "rootNamespace": "Flexus.Inspector.Samples",
+  "references": [
+    "Flexus.UIInspector.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

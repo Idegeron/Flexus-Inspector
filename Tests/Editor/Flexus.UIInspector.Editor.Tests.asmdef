@@ -1,0 +1,24 @@
+{
+  "name": "Flexus.UIInspector.Editor.Tests",
+  "rootNamespace": "Flexus.Inspector.Tests",
+  "references": [
+    "Flexus.UIInspector.Runtime",
+    "Flexus.UIInspector.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Flexus.UIInspector.Editor",
+  "rootNamespace": "Flexus.Inspector.Editor",
+  "references": [
+    "Flexus.UIInspector.Runtime",
+    "UnityEngine.AnimationModule"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
