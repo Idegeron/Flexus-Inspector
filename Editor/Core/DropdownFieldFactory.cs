@@ -209,8 +209,18 @@ namespace Flexus.Inspector.Editor
     {
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            return DropdownFieldFactory.CreateSerialized(property, property.displayName,
-                (DropdownAttribute)attribute);
+            var dropdownAttribute = fieldInfo?.GetCustomAttributes(typeof(DropdownAttribute), true)
+                .OfType<DropdownAttribute>().FirstOrDefault();
+            if (dropdownAttribute == null &&
+                SerializedPropertyOwnerResolver.TryResolve(property, out _, out var resolvedField))
+                dropdownAttribute = resolvedField.GetCustomAttributes(typeof(DropdownAttribute), true)
+                    .OfType<DropdownAttribute>().FirstOrDefault();
+
+            if (dropdownAttribute != null)
+                return DropdownFieldFactory.CreateSerialized(property, property.displayName, dropdownAttribute);
+
+            return new HelpBox($"Dropdown attribute for '{property.propertyPath}' could not be resolved.",
+                HelpBoxMessageType.Error);
         }
     }
 }
