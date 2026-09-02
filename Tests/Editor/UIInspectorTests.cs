@@ -41,6 +41,16 @@ namespace Flexus.Inspector.Tests
             Assert.NotNull(root.Q(className: "flexus-collection"));
             Assert.Greater(root.Query<Button>().ToList().Count, 0);
 
+            var inlineReference = root.Q("member-inlineAction")
+                .Q(className: "flexus-managed-reference");
+            Assert.NotNull(inlineReference);
+            Assert.True(inlineReference.ClassListContains("flexus-managed-reference--inline"));
+            Assert.NotNull(inlineReference.Q(className: "flexus-managed-reference__picker"),
+                "A null inline managed reference must retain its type picker.");
+            Assert.NotNull(inlineReference.Q(className: "flexus-empty-state"));
+            Assert.Null(inlineReference.Q(className: "flexus-managed-reference__label"),
+                "HideLabel must hide the custom managed-reference label.");
+
             AssertFieldLabel(root, "_int", "Int");
             AssertFieldLabel(root, "_float", "Float");
             AssertFieldLabel(root, "_string", "String");
@@ -360,6 +370,7 @@ namespace Flexus.Inspector.Tests
                 { "two", 2 },
             };
             [SerializeReference] public TestAction action = new TestAction { label = "Primary" };
+            [SerializeReference, InlineProperty, HideLabel] public TestAction inlineAction;
             [SerializeReference, ListDrawerSettings] public List<TestAction> actions = new List<TestAction>
             {
                 new TestAction { label = "First" },

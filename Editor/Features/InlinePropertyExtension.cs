@@ -14,6 +14,7 @@ namespace Flexus.Inspector.Editor
         protected override void Apply(MemberElement element, InlinePropertyAttribute attribute, MemberContext context)
         {
             if (context.Descriptor.HasAttribute<UseUnityDrawerAttribute>()) return;
+            if (context.SerializedProperty?.propertyType == SerializedPropertyType.ManagedReference) return;
             var root = new VisualElement();
             root.AddToClassList("flexus-inline-property");
             if (context.SerializedProperty != null)

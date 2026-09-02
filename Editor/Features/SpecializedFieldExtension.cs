@@ -138,9 +138,15 @@ namespace Flexus.Inspector.Editor
 
             if (context.SerializedProperty?.propertyType == SerializedPropertyType.ManagedReference)
             {
-                element.ReplaceContent(new ManagedReferenceElement(context.SerializedProperty,
-                    context.Descriptor.ValueType, context.Descriptor.DisplayName,
-                    !context.Descriptor.HasAttribute<HideReferencePickerAttribute>()));
+                var label = context.Descriptor.HasAttribute<HideLabelAttribute>()
+                    ? null
+                    : context.Descriptor.DisplayName;
+                var reference = new ManagedReferenceElement(context.SerializedProperty,
+                    context.Descriptor.ValueType, label,
+                    !context.Descriptor.HasAttribute<HideReferencePickerAttribute>());
+                if (context.Descriptor.HasAttribute<InlinePropertyAttribute>())
+                    reference.AddToClassList("flexus-managed-reference--inline");
+                element.ReplaceContent(reference);
                 return;
             }
 

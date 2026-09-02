@@ -829,6 +829,25 @@
     padding-bottom: 5px;
 }
 
+.flexus-managed-reference--inline {
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.flexus-managed-reference--inline > .flexus-managed-reference__header {
+    padding-left: 0;
+    padding-right: 0;
+    border-bottom-width: 0;
+}
+
+.flexus-managed-reference--inline > .flexus-managed-reference__body {
+    padding-left: 0;
+    padding-right: 0;
+}
+
 .flexus-list-item__body > .flexus-managed-reference {
     background-color: transparent;
     border-left-width: 0;
