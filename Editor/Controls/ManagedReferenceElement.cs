@@ -112,7 +112,7 @@ namespace Flexus.Inspector.Editor
                 }
                 else
                 {
-                    var field = new PropertyField(child.Copy());
+                    var field = DropdownFieldFactory.CreateSerializedOrDefault(child);
                     field.AddToClassList("flexus-managed-reference__field");
                     body.Add(field);
                 }
