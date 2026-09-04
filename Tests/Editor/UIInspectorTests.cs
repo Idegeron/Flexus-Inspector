@@ -121,6 +121,41 @@ namespace Flexus.Inspector.Tests
         }
 
         [Test]
+        public void TypeConstraintDropdownIncludesUnityObjectDescendants()
+        {
+            var editor = UnityEditor.Editor.CreateEditor(component);
+            var root = editor.CreateInspectorGUI();
+            var dropdown = root.Q("member-componentType").Q<SearchDropdownElement>();
+            Assert.NotNull(dropdown);
+            var provider = (Func<IEnumerable<SearchItem>>)typeof(SearchDropdownElement)
+                .GetField("itemProvider", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(dropdown);
+
+            Assert.NotNull(provider);
+            Assert.True(provider().Any(item => Equals(item.Value, typeof(TestComponent))));
+            UnityEngine.Object.DestroyImmediate(editor);
+        }
+
+        [Test]
+        public void MethodButtonInvokesAttributedMethod()
+        {
+            var editor = UnityEditor.Editor.CreateEditor(component);
+            var root = editor.CreateInspectorGUI();
+            var button = root.Q("member-Increment").Q<Button>(className: "flexus-button--primary");
+
+            Assert.NotNull(button);
+            Assert.True(button.enabledInHierarchy);
+            var invoke = button.clickable.GetType().GetMethod("Invoke",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(invoke);
+            invoke.Invoke(button.clickable, new object[] { null });
+
+            Assert.AreEqual(1, component.value);
+            Assert.AreEqual(1, editor.serializedObject.FindProperty(nameof(TestComponent.value)).intValue,
+                "The inspector's SerializedObject must reflect changes made by the invoked method.");
+            UnityEngine.Object.DestroyImmediate(editor);
+        }
+
+        [Test]
         public void CollectionFooterRemovesSelectedRowsOrFallsBackToLastRows()
         {
             var editor = UnityEditor.Editor.CreateEditor(component);
@@ -383,6 +418,7 @@ namespace Flexus.Inspector.Tests
             [SerializeField, LabelText("Test")] private string _testText;
             [SerializeField, HideInInspector] private bool _hidden;
             [ShowInInspector, ReadOnly] public int DoubleValue => value * 2;
+            [TypeConstraint(typeof(MonoBehaviour))] public SerializableType componentType = new SerializableType();
             [Button] private void Increment() => value++;
             [Button] private void ApplyValues(int amount = 1, string message = "Ready") { }
         }

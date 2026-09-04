@@ -77,11 +77,12 @@ namespace Flexus.Inspector.Editor
                 root.Add(body);
             }
 
-            var button = new Button(() => Invoke(context, method, values, attribute))
+            var button = new Button
             {
                 text = parameters.Length == 0 ? actionLabel : $"Run {actionLabel}",
                 tooltip = parameters.Length == 0 ? null : $"Invoke {method.Name} with the parameters above",
             };
+            button.clicked += () => Invoke(context, method, values, attribute);
             button.AddToClassList("flexus-button");
             button.AddToClassList("flexus-button--primary");
             button.style.height = (float)(attribute?.Size ?? InspectorButtonSize.Medium);
@@ -115,6 +116,7 @@ namespace Flexus.Inspector.Editor
                 catch (Exception exception) { Debug.LogException(exception.GetBaseException()); }
             }
             context.Inspector.MarkDirty();
+            context.Inspector.SerializedObject.Update();
         }
     }
 

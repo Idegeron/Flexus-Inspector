@@ -300,7 +300,8 @@ namespace Flexus.Inspector.Editor
             {
                 yield return new SearchItem("None", null);
                 foreach (var type in InspectorVisuals.CandidateTypes(
-                             constraint?.BaseType ?? typeof(object), constraint?.AllowAbstract == true)
+                             constraint?.BaseType ?? typeof(object), constraint?.AllowAbstract == true,
+                             includeUnityObjectTypes: true)
                          .OrderBy(InspectorVisuals.TypePath))
                     yield return new SearchItem(InspectorVisuals.TypePath(type), type, null, type.FullName);
             }

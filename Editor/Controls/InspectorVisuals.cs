@@ -57,7 +57,8 @@ namespace Flexus.Inspector.Editor
             return string.IsNullOrEmpty(type.Namespace) ? label : $"{type.Namespace.Replace('.', '/')}/{label}";
         }
 
-        public static IEnumerable<Type> CandidateTypes(Type baseType, bool allowAbstract = false)
+        public static IEnumerable<Type> CandidateTypes(Type baseType, bool allowAbstract = false,
+            bool includeUnityObjectTypes = false)
         {
             if (baseType == null) yield break;
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -73,7 +74,7 @@ namespace Flexus.Inspector.Editor
                 {
                     if (type == null || type.IsGenericTypeDefinition || type.IsInterface ||
                         (!allowAbstract && type.IsAbstract) || !baseType.IsAssignableFrom(type) ||
-                        typeof(UnityEngine.Object).IsAssignableFrom(type)) continue;
+                        (!includeUnityObjectTypes && typeof(UnityEngine.Object).IsAssignableFrom(type))) continue;
                     yield return type;
                 }
             }
