@@ -85,7 +85,9 @@ namespace Flexus.Inspector.Editor
             button.clicked += () => Invoke(context, method, values, attribute);
             button.AddToClassList("flexus-button");
             button.AddToClassList("flexus-button--primary");
-            button.style.height = (float)(attribute?.Size ?? InspectorButtonSize.Medium);
+            button.AddToClassList("flexus-method-action__invoke");
+            var size = attribute?.Size ?? InspectorButtonSize.Medium;
+            button.style.height = size == InspectorButtonSize.Medium ? 30f : (float)size;
             if (parameters.Length > 0)
             {
                 var footer = new VisualElement();

@@ -156,6 +156,27 @@ namespace Flexus.Inspector.Tests
         }
 
         [Test]
+        public void TypeReadOnlyDoesNotDisableMethodButton()
+        {
+            var readOnlyObject = new GameObject("Read-only button test");
+            var readOnlyComponent = readOnlyObject.AddComponent<ReadOnlyButtonComponent>();
+            var editor = UnityEditor.Editor.CreateEditor(readOnlyComponent);
+            var root = editor.CreateInspectorGUI();
+            var button = root.Q("member-Increment").Q<Button>(className: "flexus-button--primary");
+
+            Assert.NotNull(button);
+            Assert.True(button.enabledInHierarchy);
+            var invoke = button.clickable.GetType().GetMethod("Invoke",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(invoke);
+            invoke.Invoke(button.clickable, new object[] { null });
+            Assert.AreEqual(1, readOnlyComponent.value);
+
+            UnityEngine.Object.DestroyImmediate(editor);
+            UnityEngine.Object.DestroyImmediate(readOnlyObject);
+        }
+
+        [Test]
         public void CollectionFooterRemovesSelectedRowsOrFallsBackToLastRows()
         {
             var editor = UnityEditor.Editor.CreateEditor(component);
@@ -421,6 +442,13 @@ namespace Flexus.Inspector.Tests
             [TypeConstraint(typeof(MonoBehaviour))] public SerializableType componentType = new SerializableType();
             [Button] private void Increment() => value++;
             [Button] private void ApplyValues(int amount = 1, string message = "Ready") { }
+        }
+
+        [Flexus.Inspector.ReadOnly]
+        public sealed class ReadOnlyButtonComponent : MonoBehaviour
+        {
+            public int value;
+            [Button] private void Increment() => value++;
         }
 
         [Serializable]
