@@ -119,8 +119,7 @@ namespace Flexus.Inspector.Editor
                             descriptor = new MemberDescriptor(field, InspectorMemberKind.Field, field.FieldType,
                                 declarationIndex++, attributes);
                             break;
-                        case PropertyInfo property when property.IsDefined(typeof(ShowInInspectorAttribute), true) &&
-                                                        property.GetIndexParameters().Length == 0 && property.GetMethod != null:
+                        case PropertyInfo property when IsInspectableProperty(property):
                             descriptor = new MemberDescriptor(property, InspectorMemberKind.Property, property.PropertyType,
                                 declarationIndex++, attributes);
                             break;
@@ -150,7 +149,16 @@ namespace Flexus.Inspector.Editor
             if (field.IsDefined(typeof(ShowInInspectorAttribute), true))
                 return true;
             return field.IsPublic || field.IsDefined(typeof(SerializeField), true) ||
-                   field.IsDefined(typeof(SerializeReference), true);
+                   field.IsDefined(typeof(SerializeReference), true) ||
+                   InspectorMemberInclusionRegistry.Includes(field);
+        }
+
+        private static bool IsInspectableProperty(PropertyInfo property)
+        {
+            if (property.GetIndexParameters().Length != 0 || property.GetMethod == null)
+                return false;
+            return property.IsDefined(typeof(ShowInInspectorAttribute), true) ||
+                   InspectorMemberInclusionRegistry.Includes(property);
         }
     }
 
@@ -179,8 +187,14 @@ namespace Flexus.Inspector.Editor
 
         public void MarkDirty()
         {
+            NotifyChanged();
             foreach (var target in Targets)
                 if (target) EditorUtility.SetDirty(target);
+        }
+
+        public void NotifyChanged()
+        {
+            InspectorChangeHandlerRegistry.Notify(this);
         }
     }
 

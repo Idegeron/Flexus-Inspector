@@ -52,6 +52,8 @@ namespace Flexus.Inspector.Editor
                     : null;
                 var memberContext = new MemberContext(context, descriptor, property);
                 var element = CreateMember(memberContext);
+                if (property != null)
+                    element.TrackPropertyValue(property, _ => context.NotifyChanged());
                 // Type-level ReadOnly protects data, but method buttons are actions rather than values.
                 // Keep them interactive unless a condition or a member-level ReadOnly disables them.
                 if (type.ReadOnly && descriptor.Kind != InspectorMemberKind.Method)

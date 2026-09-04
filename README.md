@@ -181,6 +181,17 @@ public sealed class MyValueBackend : IInspectorValueBackend
 The highest-priority matching backend wins. Without a custom backend, the Inspector uses `SerializedProperty` when
 available and reflection otherwise.
 
+## Flexus Serialization integration
+
+When `com.flexus.serialization` 1.0.0 or newer is installed alongside this package, the optional Editor integration
+is enabled automatically. Private fields marked with `SerializationIncluded` are displayed as reflection-backed
+members, and every Inspector mutation calls `ISerializable.SetDirty(true)` for all edited targets. Reflection-backed
+lists and arrays support value editing, adding, removing, and reordering.
+
+Install both Git packages in the consuming project's `Packages/manifest.json`; neither package needs to embed or
+modify the other. Flexus Serialization currently persists fields only, so `SerializationIncluded` properties are not
+treated as persistent Inspector members.
+
 ## Serialization notes
 
 The Inspector does not replace Unity serialization. Standard fields, lists, arrays, and `SerializeReference` use

@@ -969,8 +969,10 @@
     border-bottom-right-radius: 2px;
 }
 
-.flexus-button--primary {
+.flexus-ui-inspector .flexus-button--primary {
     -unity-text-align: middle-center;
+    align-items: center;
+    justify-content: center;
 }
 
 .flexus-button--inline {

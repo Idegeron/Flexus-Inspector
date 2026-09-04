@@ -20,9 +20,10 @@ namespace Flexus.Inspector.Editor
             if (context.Descriptor.HasAttribute<UseUnityDrawerAttribute>()) return false;
             var type = context.Descriptor.ValueType;
             return context.SerializedProperty is { isArray: true, propertyType: not SerializedPropertyType.String } ||
+                   IsReflectionList(type) ||
                    typeof(IDictionary).IsAssignableFrom(type) ||
                    type.GetInterfaces().Any(candidate => candidate.IsGenericType &&
-                                                         candidate.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+                                                          candidate.GetGenericTypeDefinition() == typeof(IDictionary<,>));
         }
 
         public void Apply(MemberElement element, MemberContext context)
@@ -46,7 +47,22 @@ namespace Flexus.Inspector.Editor
                 PropertyInfo property when property.GetMethod != null => property.GetValue(context.Inspector.PrimaryTarget),
                 _ => context.Value.GetValue(),
             };
+            if (IsReflectionList(context.Descriptor.ValueType))
+            {
+                element.ReplaceContent(new ReflectionListElement(context));
+                return;
+            }
+
             if (value != null) element.ReplaceContent(new DictionaryElement(context, value));
+        }
+
+        private static bool IsReflectionList(Type type)
+        {
+            if (type == null || type == typeof(string)) return false;
+            if (type.IsArray || typeof(IList).IsAssignableFrom(type)) return true;
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IList<>) ||
+                   type.GetInterfaces().Any(candidate => candidate.IsGenericType &&
+                                                         candidate.GetGenericTypeDefinition() == typeof(IList<>));
         }
     }
 

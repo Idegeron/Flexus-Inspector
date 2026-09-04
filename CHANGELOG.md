@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Added an optional `com.flexus.serialization` Editor integration that exposes private
+  `[SerializationIncluded]` fields and marks every edited `ISerializable` target dirty.
+- Added serializer-neutral member-inclusion and Inspector-change extension points.
+- Added editable reflection-backed lists and arrays, including pagination, polymorphic type selection,
+  element mutation, add/remove, and reordering support.
+- Added focused integration coverage for field discovery, persistence invalidation, reflection lists,
+  and the field-only persistence contract.
+
 ## 0.4.0 - 2026-08-23
 
 - Disabled Unity's competing `unity-base-field__aligned` geometry inside Flexus inspectors and made the Flexus
