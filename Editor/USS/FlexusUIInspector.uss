@@ -677,6 +677,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex-direction: row;
+    align-items: center;
 }
 
 .flexus-list-item__type {
@@ -774,6 +776,29 @@
 
 .flexus-collection__footer-actions > .flexus-icon-button:hover {
     background-color: var(--flexus-hover);
+}
+
+.flexus-collection-search {
+    flex-shrink: 0;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+.flexus-search-title__segment{
+    flex-shrink: 0;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    white-space: nowrap;
+}
+
+.flexus-search-title__match{
+    color: var(--flexus-text);
+    background-color: rgba(255, 196, 0, 0.38);
+    -unity-font-style: bold;
 }
 
 .flexus-managed-reference {

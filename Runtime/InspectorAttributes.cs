@@ -408,6 +408,19 @@ namespace Flexus.Inspector
     }
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class SearchBarAttribute : Attribute
+    {
+        public Type MatchType { get; }
+        public string MatchMethod { get; }
+
+        public SearchBarAttribute(Type matchType = null, string matchMethod = null)
+        {
+            MatchType = matchType;
+            MatchMethod = matchMethod;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class ListDrawerSettingsAttribute : Attribute
     {
         public bool Draggable { get; set; } = true;

@@ -18,10 +18,17 @@ namespace Flexus.Inspector.Editor
         private readonly Action<Type> typeChanged;
         private readonly VisualElement header = new VisualElement();
         private readonly VisualElement body = new VisualElement();
+        private readonly CollectionSearchState _search;
         private string lastTypeName;
 
-        public ManagedReferenceElement(SerializedProperty property, Type declaredType, string label,
-            bool showPicker = true, Action<Type> typeChanged = null, bool showHeader = true)
+        public ManagedReferenceElement(
+            SerializedProperty property, 
+            Type declaredType, 
+            string label,
+            bool showPicker = true, 
+            Action<Type> typeChanged = null, 
+            bool showHeader = true,
+            CollectionSearchState search = null)
         {
             this.property = property.Copy();
             this.declaredType = declaredType ?? typeof(object);
@@ -29,6 +36,7 @@ namespace Flexus.Inspector.Editor
             this.showPicker = showPicker;
             this.showHeader = showHeader;
             this.typeChanged = typeChanged;
+            _search = search;
             AddToClassList("flexus-managed-reference");
             header.AddToClassList("flexus-managed-reference__header");
             body.AddToClassList("flexus-managed-reference__body");
@@ -99,14 +107,14 @@ namespace Flexus.Inspector.Editor
                     var settings = reflectedField?.GetCustomAttributes(typeof(ListDrawerSettingsAttribute), true)
                         .OfType<ListDrawerSettingsAttribute>().FirstOrDefault() ?? new ListDrawerSettingsAttribute();
                     var list = new SerializedListElement(child, reflectedField?.FieldType ?? typeof(List<object>),
-                        child.displayName, settings);
+                        child.displayName, settings, _search);
                     list.AddToClassList("flexus-managed-reference__field");
                     body.Add(list);
                 }
                 else if (child.propertyType == SerializedPropertyType.ManagedReference)
                 {
                     var reference = new ManagedReferenceElement(child,
-                        reflectedField?.FieldType ?? typeof(object), child.displayName);
+                        reflectedField?.FieldType ?? typeof(object), child.displayName, search: _search);
                     reference.AddToClassList("flexus-managed-reference__field");
                     body.Add(reference);
                 }
@@ -145,6 +153,7 @@ namespace Flexus.Inspector.Editor
             property.managedReferenceValue = value is Type type ? Activator.CreateInstance(type, true) : null;
             property.serializedObject.ApplyModifiedProperties();
             Rebuild();
+            _search?.Refresh?.Invoke();
         }
     }
 }
