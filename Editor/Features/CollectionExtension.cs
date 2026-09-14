@@ -251,8 +251,7 @@ namespace Flexus.Inspector.Editor
 
             var value = GetPropertyValue(property);
 
-            if (_search.Attribute.MatchType != null &&
-                (value == null || !_search.Attribute.MatchType.IsInstanceOfType(value)))
+            if (_search.Attribute.MatchTypes.Length > 0 && !IsSearchTarget(value))
             {
                 return false;
             }
@@ -536,7 +535,7 @@ namespace Flexus.Inspector.Editor
                 headerMain.AddToClassList("flexus-list-item__header-main--managed-reference");
                 ManagedReferenceElement reference = null;
                 SearchDropdownElement typePicker = null;
-                var childSearch = IsSearchTarget(item) ? null : _search;
+                var childSearch = IsSearchTarget(GetPropertyValue(item)) ? null : _search;
                 reference = new ManagedReferenceElement(item, elementType, null, false, type =>
                 {
                     typePicker?.SetText(InspectorVisuals.TypeName(type));
@@ -568,11 +567,12 @@ namespace Flexus.Inspector.Editor
                     (oldIndex, newIndex) => Move(page * PageSize + oldIndex, page * PageSize + newIndex));
         }
 
-        private bool IsSearchTarget(SerializedProperty property)
+        private bool IsSearchTarget(object value)
         {
-            var value = GetPropertyValue(property);
-            var matchType = _search?.Attribute.MatchType;
-            return value != null && matchType != null && matchType.IsInstanceOfType(value);
+            var matchTypes = _search?.Attribute.MatchTypes;
+            return value != null &&
+                   matchTypes != null &&
+                   matchTypes.Any(matchType => matchType != null && matchType.IsInstanceOfType(value));
         }
 
         private VisualElement CreateDragHandle()

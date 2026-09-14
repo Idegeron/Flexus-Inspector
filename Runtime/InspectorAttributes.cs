@@ -410,12 +410,19 @@ namespace Flexus.Inspector
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class SearchBarAttribute : Attribute
     {
-        public Type MatchType { get; }
-        public string MatchMethod { get; }
+        public Type MatchType => MatchTypes.Length > 0 ? MatchTypes[0] : null;
+        public Type[] MatchTypes { get; }
+        public string MatchMethod { get; set; }
 
-        public SearchBarAttribute(Type matchType = null, string matchMethod = null)
+        public SearchBarAttribute(params Type[] matchTypes)
         {
-            MatchType = matchType;
+            MatchTypes = matchTypes == null
+                ? Array.Empty<Type>()
+                : Array.FindAll(matchTypes, matchType => matchType != null);
+        }
+
+        public SearchBarAttribute(Type matchType, string matchMethod) : this(matchType)
+        {
             MatchMethod = matchMethod;
         }
     }

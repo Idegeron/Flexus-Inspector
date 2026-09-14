@@ -779,6 +779,9 @@
 }
 
 .flexus-collection-search {
+    width: auto;
+    max-width: 100%;
+    align-self: stretch;
     flex-shrink: 0;
     margin-left: 5px;
     margin-right: 5px;
