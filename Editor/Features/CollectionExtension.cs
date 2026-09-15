@@ -66,6 +66,24 @@ namespace Flexus.Inspector.Editor
         }
     }
 
+    internal sealed class CollectionSearchState
+    {
+        public SearchBarAttribute Attribute { get; }
+        public object Target { get; }
+        
+        public Action Refresh { get; set; }
+        public string LastError { get; set; }
+        public string Query { get; set; } = string.Empty;
+
+        public bool IsActive => !string.IsNullOrEmpty(Query);
+
+        public CollectionSearchState(object target, SearchBarAttribute attribute)
+        {
+            Target = target;
+            Attribute = attribute;
+        }
+    }
+
     internal sealed class SerializedListElement : VisualElement
     {
         private readonly SerializedProperty property;
@@ -76,42 +94,77 @@ namespace Flexus.Inspector.Editor
         private readonly CollectionChrome chrome;
         private readonly Label pageLabel = new Label();
         private readonly Dictionary<string, bool> expansionStates = new Dictionary<string, bool>();
+        private readonly CollectionSearchState _search;
+        private readonly List<int> _visibleIndices = new List<int>();
+        
         private Button removeSelectedButton;
         private int selectedIndex = -1;
         private int page;
         private int observedSize = -1;
 
         public SerializedListElement(MemberContext context, ListDrawerSettingsAttribute settings)
-            : this(context.SerializedProperty, context.Descriptor.ValueType,
-                context.Descriptor.DisplayName, settings)
+            : this(
+                context.SerializedProperty, 
+                context.Descriptor.ValueType,
+                context.Descriptor.DisplayName, 
+                settings,
+                CreateSearchState(context))
         {
+            if(_search == null)
+                return;
+
+            var searchField = new ToolbarSearchField { tooltip = "Filter list items" };
+            searchField.AddToClassList("flexus-collection-search");
+            searchField.RegisterValueChangedCallback(HandleSearchFieldChanged);
+            Insert(1, searchField);
+            _search.Refresh = HandleSearchRefresh;
         }
 
-        internal SerializedListElement(SerializedProperty serializedProperty, Type collectionType,
-            string displayName, ListDrawerSettingsAttribute settings)
+        internal SerializedListElement(
+            SerializedProperty serializedProperty, 
+            Type collectionType,
+            string displayName, 
+            ListDrawerSettingsAttribute settings,
+            CollectionSearchState search = null)
         {
             this.settings = settings;
             property = serializedProperty.Copy();
             this.collectionType = collectionType;
             elementType = InspectorVisuals.ListElementType(collectionType);
+            _search = search;
+            
             AddToClassList("flexus-collection");
             AddToClassList("flexus-list");
 
-            chrome = new CollectionChrome(this, displayName,
-                settings.AlwaysExpanded || property.isExpanded, value => property.isExpanded = value);
-            CollectionContextMenus.AttachCollection(this, ClearCollection,
+            chrome = new CollectionChrome(
+                this,
+                displayName,
+                settings.AlwaysExpanded || _search?.IsActive == true || property.isExpanded,
+                value => property.isExpanded = value);
+            
+            CollectionContextMenus.AttachCollection(
+                this, 
+                ClearCollection,
                 () => CollectionClipboard.CopyCollection(property, this.collectionType),
-                () => CollectionClipboard.CanPasteCollection(this.collectionType), PasteCollection);
+                () => CollectionClipboard.CanPasteCollection(this.collectionType), 
+                PasteCollection);
+
             RegisterCallback<PointerDownEvent>(evt =>
             {
-                if (evt.button == 0 && !CollectionSelection.IsRowTarget(evt.target, this) &&
-                    !CollectionSelection.IsFooterTarget(evt.target, this)) ClearSelection();
+                if (evt.button == 0 &&
+                    !CollectionSelection.IsRowTarget(evt.target, this) &&
+                    !CollectionSelection.IsFooterTarget(evt.target, this))
+                {
+                    ClearSelection();
+                }
             }, TrickleDown.TrickleDown);
+            
             rows.AddToClassList("flexus-collection__rows");
             rows.RegisterCallback<PointerDownEvent>(evt =>
             {
                 if (evt.button == 0 && !CollectionSelection.IsRowTarget(evt.target, rows)) ClearSelection();
             }, TrickleDown.TrickleDown);
+            
             chrome.Body.Add(rows);
             BuildFooter();
             Rebuild();
@@ -119,7 +172,208 @@ namespace Flexus.Inspector.Editor
         }
 
         private int PageSize => Mathf.Max(1, settings.ItemsPerPage);
-        private int PageCount => Mathf.Max(1, Mathf.CeilToInt((float)property.arraySize / PageSize));
+        private int ResultCount => _search?.IsActive == true ? _visibleIndices.Count : property.arraySize;
+        private int PageCount => Mathf.Max(1, Mathf.CeilToInt((float)ResultCount / PageSize));
+        private bool CanDrag => settings.Draggable && _search?.IsActive != true;
+
+        private static CollectionSearchState CreateSearchState(MemberContext context)
+        {
+            var attribute = context.Descriptor.GetAttribute<SearchBarAttribute>();
+            return attribute == null ? null : new CollectionSearchState(context.Inspector.PrimaryTarget, attribute);
+        }
+
+        private void HandleSearchFieldChanged(ChangeEvent<string> change)
+        {
+            var query = change.newValue?.Trim() ?? string.Empty;
+            
+            if(string.Equals(_search.Query, query, StringComparison.Ordinal))
+                return;
+
+            _search.Query = query;
+            _search.Refresh?.Invoke();
+        }
+
+        private void HandleSearchRefresh()
+        {
+            page = 0;
+            chrome.SetExpanded(
+                _search.IsActive || settings.AlwaysExpanded || property.isExpanded,
+                false);
+            Rebuild();
+        }
+
+        private void RefreshVisibleIndices()
+        {
+            _visibleIndices.Clear();
+            
+            if(_search?.IsActive != true)
+                return;
+
+            for (var index = 0; index < property.arraySize; index++)
+            {
+                var item = property.GetArrayElementAtIndex(index).Copy();
+                var title = GetItemTitle(item, index);
+                
+                if(IsVisible(item, title))
+                    _visibleIndices.Add(index);
+            }
+        }
+
+        private bool IsVisible(SerializedProperty item, string title)
+        {
+            return IsMatch(item, title) || HasMatchingDescendant(item);
+        }
+
+        private bool HasMatchingDescendant(SerializedProperty property)
+        {
+            var iterator = property.Copy();
+            var rootDepth = iterator.depth;
+
+            while (iterator.NextVisible(true))
+            {
+                if(iterator.depth <= rootDepth)
+                    break;
+                
+                if(!IsSearchCandidate(iterator))
+                    continue;
+
+                if (IsMatch(iterator, GetSearchTitle(iterator)))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool IsMatch(SerializedProperty property, string title)
+        {
+            if (_search?.IsActive != true)
+                return false;
+
+            var value = GetPropertyValue(property);
+
+            if (_search.Attribute.MatchTypes.Length > 0 && !IsSearchTarget(value))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(_search.Attribute.MatchMethod))
+            {
+                return !string.IsNullOrEmpty(title) &&
+                       title.IndexOf(_search.Query, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+
+            if (!MemberSourceResolver.Invoke(
+                    _search.Target,
+                    _search.Attribute.MatchMethod,
+                    new object[] { value, title, _search.Query },
+                    out var result,
+                    out var error))
+            {
+                LogSearchError(error);
+                return false;
+            }
+
+            if (result is bool matches)
+            {
+                _search.LastError = null;
+                return matches;
+            }
+            
+            LogSearchError($"Search method '{_search.Attribute.MatchMethod}' must return bool.");
+            return false;
+        }
+
+        private static bool IsSearchCandidate(SerializedProperty property)
+        {
+            return property.propertyType == SerializedPropertyType.ManagedReference ||
+                   property.name.StartsWith("data[", StringComparison.Ordinal);
+        }
+
+        private static object GetPropertyValue(SerializedProperty property)
+        {
+            try
+            {
+                return property.propertyType == SerializedPropertyType.ManagedReference
+                    ? property.managedReferenceValue
+                    : property.boxedValue;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static string GetSearchTitle(SerializedProperty property)
+        {
+            var value = GetPropertyValue(property);
+            var type = value?.GetType() ?? typeof(object);
+            return InspectorVisuals.ItemTitle(property, 0, type);
+        }
+
+        private string GetItemTitle(SerializedProperty item, int absoluteIndex)
+        {
+            return settings.ShowElementLabels
+                ? $"Element {absoluteIndex}"
+                : InspectorVisuals.ItemTitle(item, absoluteIndex, elementType);
+        }
+
+        private void SetItemTitle(VisualElement titleElement, SerializedProperty item, int absoluteIndex)
+        {
+            var title = GetItemTitle(item, absoluteIndex);
+            var query = IsMatch(item, title) ? _search.Query : null;
+            SetHighlightedText(titleElement, title, query);
+        }
+
+        private static void SetHighlightedText(VisualElement root, string text, string query)
+        {
+            root.Clear();
+            text ??= string.Empty;
+
+            if (string.IsNullOrEmpty(query))
+            {
+                AddTitleSegment(root, text, false);
+                return;
+            }
+
+            var position = 0;
+
+            while (position < text.Length)
+            {
+                var matchIndex = text.IndexOf(query, position, StringComparison.OrdinalIgnoreCase);
+
+                if (matchIndex < 0)
+                {
+                    AddTitleSegment(root, text.Substring(position), false);
+                    return;                    
+                }
+
+                if (matchIndex > position) 
+                    AddTitleSegment(root, text.Substring(position, matchIndex - position), false);
+                
+                AddTitleSegment(root, text.Substring(matchIndex, query.Length), true);
+                position = matchIndex + query.Length;
+            }
+        }
+
+        private static void AddTitleSegment(VisualElement root, string text, bool isMatch)
+        {
+            var label = new Label(text);
+            label.AddToClassList("flexus-search-title__segment");
+            
+            if(isMatch)
+                label.AddToClassList("flexus-search-title__match");
+            
+            root.Add(label);
+        }
+
+        private void LogSearchError(string error)
+        {
+            if(string.IsNullOrWhiteSpace(error) || string.Equals(_search.LastError, error, StringComparison.Ordinal))
+                return;
+
+            _search.LastError = error;
+            Debug.LogError($"[Flexus Inspector] SearchBar: {error}", _search.Target as UnityEngine.Object);
+        }
 
         private void BuildFooter()
         {
@@ -163,16 +417,34 @@ namespace Flexus.Inspector.Editor
         {
             property.serializedObject.UpdateIfRequiredOrScript();
             observedSize = property.arraySize;
-            if (selectedIndex >= property.arraySize) selectedIndex = -1;
+            
+            if (selectedIndex >= property.arraySize) 
+                selectedIndex = -1;
+            
+            RefreshVisibleIndices();
             page = Mathf.Clamp(page, 0, PageCount - 1);
             rows.Clear();
+            
             var start = page * PageSize;
-            var end = Mathf.Min(property.arraySize, start + PageSize);
-            for (var index = start; index < end; index++) BuildItem(property.GetArrayElementAtIndex(index).Copy(), index);
-            chrome.Count.text = $"{property.arraySize} {(property.arraySize == 1 ? "item" : "items")}";
+            var end = Mathf.Min(ResultCount, start + PageSize);
+            
+            for (var visibleIndex = start; visibleIndex < end; visibleIndex++)
+            {
+                var absoluteIndex = _search?.IsActive == true ? _visibleIndices[visibleIndex] : visibleIndex;
+                BuildItem(property.GetArrayElementAtIndex(absoluteIndex).Copy(), absoluteIndex);
+            }
+
+            chrome.Count.text = _search?.IsActive == true
+                ? $"{ResultCount}/{property.arraySize} items" 
+                : $"{property.arraySize} {(property.arraySize == 1 ? "item" : "items")}";
+            
             pageLabel.text = $"{page + 1} / {PageCount}";
+            
             if (property.arraySize == 0)
                 rows.Add(InspectorVisuals.EmptyState("List is empty", "Use + below to add an item."));
+            else if(ResultCount==0)
+                rows.Add(InspectorVisuals.EmptyState("No matching items", "Change or clear the search"));
+            
             RefreshSelection();
             FieldColumnLayoutController.RequestRefresh(this);
         }
@@ -209,7 +481,7 @@ namespace Flexus.Inspector.Editor
             field.AddToClassList("flexus-list-item__value");
             row.Add(field);
             row.Bind(property.serializedObject);
-            if (settings.Draggable)
+            if (CanDrag)
                 CollectionDrag.Attach(handle, rows, row, absoluteIndex - page * PageSize,
                     (oldIndex, newIndex) => Move(page * PageSize + oldIndex, page * PageSize + newIndex));
         }
@@ -218,28 +490,38 @@ namespace Flexus.Inspector.Editor
         {
             var header = new VisualElement();
             header.AddToClassList("flexus-list-item__header");
+            
             var handle = CreateDragHandle();
             header.Add(handle);
             header.Add(CreateIndexLabel(absoluteIndex));
+            
             var headerMain = new VisualElement();
             headerMain.AddToClassList("flexus-list-item__header-main");
             header.Add(headerMain);
+            
             var body = new VisualElement();
             body.AddToClassList("flexus-list-item__body");
+            
             var expansionKey = GetExpansionKey(item, absoluteIndex);
-            var expanded = GetExpandedState(expansionKey, item, absoluteIndex);
+            var expanded = _search?.IsActive == true || GetExpandedState(expansionKey, item, absoluteIndex);
 
             var expander = new Button();
             expander.AddToClassList("flexus-list-item__expander");
+            
             var arrow = new Label(expanded ? "▾" : "›");
             arrow.AddToClassList("flexus-list-item__arrow");
-            var title = new Label(settings.ShowElementLabels
-                ? $"Element {absoluteIndex}" : InspectorVisuals.ItemTitle(item, absoluteIndex, elementType));
+
+            var title = new VisualElement();
             title.AddToClassList("flexus-list-item__title");
+            SetItemTitle(title, item, absoluteIndex);
+            
             expander.Add(arrow);
             expander.Add(title);
             expander.clicked += () =>
             {
+                if(_search?.IsActive == true)
+                    return;
+                
                 expanded = !expanded;
                 expansionStates[expansionKey] = expanded;
                 item.isExpanded = expanded;
@@ -253,11 +535,12 @@ namespace Flexus.Inspector.Editor
                 headerMain.AddToClassList("flexus-list-item__header-main--managed-reference");
                 ManagedReferenceElement reference = null;
                 SearchDropdownElement typePicker = null;
+                var childSearch = IsSearchTarget(GetPropertyValue(item)) ? null : _search;
                 reference = new ManagedReferenceElement(item, elementType, null, false, type =>
                 {
                     typePicker?.SetText(InspectorVisuals.TypeName(type));
-                    title.text = InspectorVisuals.ItemTitle(item, absoluteIndex, elementType);
-                }, false);
+                    SetItemTitle(title, item, absoluteIndex);
+                }, false, childSearch);
                 typePicker = reference.CreateTypePicker(true);
                 typePicker.AddToClassList("flexus-list-item__type-picker");
                 headerMain.Add(typePicker);
@@ -279,14 +562,22 @@ namespace Flexus.Inspector.Editor
                 body.Bind(property.serializedObject);
             }
 
-            if (settings.Draggable)
+            if (CanDrag)
                 CollectionDrag.Attach(handle, rows, row, absoluteIndex - page * PageSize,
                     (oldIndex, newIndex) => Move(page * PageSize + oldIndex, page * PageSize + newIndex));
         }
 
+        private bool IsSearchTarget(object value)
+        {
+            var matchTypes = _search?.Attribute.MatchTypes;
+            return value != null &&
+                   matchTypes != null &&
+                   matchTypes.Any(matchType => matchType != null && matchType.IsInstanceOfType(value));
+        }
+
         private VisualElement CreateDragHandle()
         {
-            var handle = new Label(settings.Draggable ? "═" : string.Empty);
+            var handle = new Label(CanDrag ? "═" : string.Empty);
             handle.AddToClassList("flexus-collection__drag-handle");
             return handle;
         }
@@ -327,7 +618,7 @@ namespace Flexus.Inspector.Editor
             created.isExpanded = false;
             property.serializedObject.ApplyModifiedProperties();
             selectedIndex = property.arraySize - 1;
-            page = PageCount - 1;
+            page = int.MaxValue;
             Rebuild();
         }
 

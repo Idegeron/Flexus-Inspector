@@ -370,6 +370,45 @@ namespace Flexus.Inspector.Tests
             }
         }
 
+        [Test]
+        public void SearchBarMatchesAnyConfiguredType()
+        {
+            var searchObject = new GameObject("Multiple type search test");
+            var searchComponent = searchObject.AddComponent<MultipleTypeSearchComponent>();
+            var editor = UnityEditor.Editor.CreateEditor(searchComponent);
+            var window = EditorWindow.CreateInstance<EditorWindow>();
+
+            try
+            {
+                window.Show();
+                var root = editor.CreateInspectorGUI();
+                window.rootVisualElement.Add(root);
+                var list = root.Q("member-items")?.Q(className: "flexus-list");
+                var searchField = list?.Q<ToolbarSearchField>();
+
+                Assert.NotNull(list);
+                Assert.NotNull(searchField);
+
+                searchField.value = "First";
+                Assert.AreEqual(1, list.Query<VisualElement>(className: "flexus-list-item").ToList().Count);
+
+                searchField.value = "Second";
+                Assert.AreEqual(1, list.Query<VisualElement>(className: "flexus-list-item").ToList().Count);
+
+                searchField.value = "Excluded";
+                Assert.AreEqual(0, list.Query<VisualElement>(className: "flexus-list-item").ToList().Count);
+
+                searchField.value = string.Empty;
+                Assert.AreEqual(3, list.Query<VisualElement>(className: "flexus-list-item").ToList().Count);
+            }
+            finally
+            {
+                window.Close();
+                UnityEngine.Object.DestroyImmediate(editor);
+                UnityEngine.Object.DestroyImmediate(searchObject);
+            }
+        }
+
         private static void SetPrivate(object target, string field, object value)
         {
             target.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic)?.SetValue(target, value);
@@ -464,6 +503,37 @@ namespace Flexus.Inspector.Tests
             public string label;
             public int amount;
             public List<int> parameters = new List<int> { 1, 2 };
+        }
+
+        public sealed class MultipleTypeSearchComponent : MonoBehaviour
+        {
+            [SerializeReference, SearchBar(typeof(FirstSearchItem), typeof(SecondSearchItem))]
+            public List<SearchItemBase> items = new List<SearchItemBase>
+            {
+                new FirstSearchItem(),
+                new SecondSearchItem(),
+                new ExcludedSearchItem(),
+            };
+        }
+
+        [Serializable]
+        public abstract class SearchItemBase
+        {
+        }
+
+        [Serializable]
+        public sealed class FirstSearchItem : SearchItemBase
+        {
+        }
+
+        [Serializable]
+        public sealed class SecondSearchItem : SearchItemBase
+        {
+        }
+
+        [Serializable]
+        public sealed class ExcludedSearchItem : SearchItemBase
+        {
         }
     }
 }
