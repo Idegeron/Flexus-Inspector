@@ -28,14 +28,14 @@ namespace Flexus.Inspector.Editor
             bool IsVisible()
             {
                 if (string.IsNullOrEmpty(attribute.VisibleIf)) return true;
-                return MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget, attribute.VisibleIf,
+                return MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget, attribute.VisibleIf,
                     out var value, out _) && value is bool visible && visible;
             }
 
             string ResolveText()
             {
                 if (!attribute.DynamicText) return attribute.Text;
-                return MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget, attribute.Text,
+                return MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget, attribute.Text,
                     out var value, out _) ? value?.ToString() ?? string.Empty : attribute.Text;
             }
 
@@ -122,7 +122,7 @@ namespace Flexus.Inspector.Editor
             void InvokeFix(string method)
             {
                 context.Inspector.RecordUndo(method);
-                foreach (var target in context.Inspector.Targets)
+                foreach (var target in context.Inspector.ValueTargets)
                     MemberSourceResolver.Invoke(target, method, Array.Empty<object>(), out _, out _);
                 context.Inspector.MarkDirty();
                 Refresh();
@@ -135,7 +135,7 @@ namespace Flexus.Inspector.Editor
                 var componentType = isArray ? requestedType.GetElementType() : requestedType;
                 if (componentType == null || !typeof(Component).IsAssignableFrom(componentType)) return;
 
-                foreach (var target in context.Inspector.Targets)
+                foreach (var target in context.Inspector.ValueTargets)
                 {
                     var component = target as Component;
                     var gameObject = component ? component.gameObject : target as GameObject;
@@ -171,9 +171,9 @@ namespace Flexus.Inspector.Editor
             {
                 object result;
                 string error;
-                if (!MemberSourceResolver.Invoke(context.Inspector.PrimaryTarget, validate.MethodName,
+                if (!MemberSourceResolver.Invoke(context.Inspector.PrimaryValueTarget, validate.MethodName,
                         new[] { value }, out result, out error) &&
-                    !MemberSourceResolver.Invoke(context.Inspector.PrimaryTarget, validate.MethodName,
+                    !MemberSourceResolver.Invoke(context.Inspector.PrimaryValueTarget, validate.MethodName,
                         Array.Empty<object>(), out result, out error))
                 {
                     element.Validation.Add(new HelpBox(error, HelpBoxMessageType.Error));

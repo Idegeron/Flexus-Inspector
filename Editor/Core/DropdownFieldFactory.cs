@@ -14,7 +14,7 @@ namespace Flexus.Inspector.Editor
         public static SearchDropdownElement Create(MemberContext context, DropdownAttribute attribute)
         {
             var dropdown = Create(context.Descriptor.DisplayName, context.Value.GetValue(), attribute,
-                new object[] { context.Inspector.PrimaryTarget }, value => context.Value.SetValue(value));
+                new object[] { context.Inspector.PrimaryValueTarget }, value => context.Value.SetValue(value));
             if (context.SerializedProperty != null)
                 dropdown.name = "dropdown-" + context.SerializedProperty.propertyPath;
             return dropdown;

@@ -143,7 +143,8 @@ namespace Flexus.Inspector.Editor
                     : context.Descriptor.DisplayName;
                 var reference = new ManagedReferenceElement(context.SerializedProperty,
                     context.Descriptor.ValueType, label,
-                    !context.Descriptor.HasAttribute<HideReferencePickerAttribute>());
+                    !context.Descriptor.HasAttribute<HideReferencePickerAttribute>(),
+                    search: context.Inspector.SearchState);
                 if (context.Descriptor.HasAttribute<InlinePropertyAttribute>())
                     reference.AddToClassList("flexus-managed-reference--inline");
                 element.ReplaceContent(reference);
@@ -195,7 +196,7 @@ namespace Flexus.Inspector.Editor
         {
             IEnumerable<SearchItem> Items()
             {
-                if (!MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget, attribute.SourceMember,
+                if (!MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget, attribute.SourceMember,
                         out var source, out _) || source is not IEnumerable enumerable) yield break;
                 foreach (var item in enumerable)
                 {
@@ -261,7 +262,7 @@ namespace Flexus.Inspector.Editor
         {
             IEnumerable<SearchItem> Items()
             {
-                if (!MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget, attribute.AnimatorMember,
+                if (!MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget, attribute.AnimatorMember,
                         out var value, out _) || value is not Animator animator || !animator.runtimeAnimatorController) yield break;
                 foreach (var parameter in animator.parameters)
                 {
@@ -278,7 +279,7 @@ namespace Flexus.Inspector.Editor
         {
             IEnumerable<SearchItem> Items()
             {
-                if (!MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget, attribute.MaterialMember,
+                if (!MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget, attribute.MaterialMember,
                         out var value, out _) || value is not Material material || !material.shader) yield break;
                 for (var index = 0; index < material.shader.GetPropertyCount(); index++)
                 {
@@ -321,9 +322,9 @@ namespace Flexus.Inspector.Editor
             string minMember, string maxMember)
         {
             if (!string.IsNullOrEmpty(minMember) && MemberSourceResolver.TryGetValue(
-                    context.Inspector.PrimaryTarget, minMember, out var minValue, out _)) min = Convert.ToSingle(minValue);
+                    context.Inspector.PrimaryValueTarget, minMember, out var minValue, out _)) min = Convert.ToSingle(minValue);
             if (!string.IsNullOrEmpty(maxMember) && MemberSourceResolver.TryGetValue(
-                    context.Inspector.PrimaryTarget, maxMember, out var maxValue, out _)) max = Convert.ToSingle(maxValue);
+                    context.Inspector.PrimaryValueTarget, maxMember, out var maxValue, out _)) max = Convert.ToSingle(maxValue);
             return (min, max);
         }
 

@@ -43,6 +43,18 @@ public sealed class Character : MonoBehaviour
 
 Use `[UseUnityInspector]` on a type or `[UseUnityDrawer]` on a field to opt out.
 
+## Embedded property UI
+
+Editor tools that already own a `SerializedProperty` can reuse the same managed-reference and list controls as the
+Inspector. `FlexusInspectorFields.CreateManagedReference` accepts a declared reference type, while
+`CreateManagedReferenceList` also accepts the serialized collection type and declared element type. Both return a
+bound `VisualElement` with the Inspector stylesheet and layout controller attached.
+
+For managed-reference children, the controls run the normal Flexus member and group pipeline against the selected
+object. This includes fields, `[ShowInInspector]` properties, `[Button]` methods, ordering, and nested Flexus
+attributes. Unity targets remain responsible for Undo and dirty state; the selected object supplies dynamic attribute
+values and callback methods.
+
 ## Features
 
 ### General

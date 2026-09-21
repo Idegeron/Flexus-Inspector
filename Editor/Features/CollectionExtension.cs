@@ -43,8 +43,8 @@ namespace Flexus.Inspector.Editor
 
             var value = context.Descriptor.Member switch
             {
-                FieldInfo field => field.GetValue(context.Inspector.PrimaryTarget),
-                PropertyInfo property when property.GetMethod != null => property.GetValue(context.Inspector.PrimaryTarget),
+                FieldInfo field => field.GetValue(context.Inspector.PrimaryValueTarget),
+                PropertyInfo property when property.GetMethod != null => property.GetValue(context.Inspector.PrimaryValueTarget),
                 _ => context.Value.GetValue(),
             };
             if (IsReflectionList(context.Descriptor.ValueType))
@@ -110,7 +110,7 @@ namespace Flexus.Inspector.Editor
                 settings,
                 CreateSearchState(context))
         {
-            if(_search == null)
+            if (_search == null || context.Descriptor.GetAttribute<SearchBarAttribute>() == null)
                 return;
 
             var searchField = new ToolbarSearchField { tooltip = "Filter list items" };
@@ -125,12 +125,13 @@ namespace Flexus.Inspector.Editor
             Type collectionType,
             string displayName, 
             ListDrawerSettingsAttribute settings,
-            CollectionSearchState search = null)
+            CollectionSearchState search = null,
+            Type declaredElementType = null)
         {
             this.settings = settings;
             property = serializedProperty.Copy();
             this.collectionType = collectionType;
-            elementType = InspectorVisuals.ListElementType(collectionType);
+            elementType = declaredElementType ?? InspectorVisuals.ListElementType(collectionType);
             _search = search;
             
             AddToClassList("flexus-collection");
@@ -164,6 +165,24 @@ namespace Flexus.Inspector.Editor
             {
                 if (evt.button == 0 && !CollectionSelection.IsRowTarget(evt.target, rows)) ClearSelection();
             }, TrickleDown.TrickleDown);
+
+            VisualElement panelRoot = null;
+            EventCallback<PointerDownEvent> clearOutside = evt =>
+            {
+                if (evt.button == 0 && evt.target is VisualElement target &&
+                    target != this && !Contains(target))
+                    ClearSelection();
+            };
+            RegisterCallback<AttachToPanelEvent>(evt =>
+            {
+                panelRoot = evt.destinationPanel.visualTree;
+                panelRoot.RegisterCallback(clearOutside, TrickleDown.TrickleDown);
+            });
+            RegisterCallback<DetachFromPanelEvent>(_ =>
+            {
+                panelRoot?.UnregisterCallback(clearOutside, TrickleDown.TrickleDown);
+                panelRoot = null;
+            });
             
             chrome.Body.Add(rows);
             BuildFooter();
@@ -179,7 +198,9 @@ namespace Flexus.Inspector.Editor
         private static CollectionSearchState CreateSearchState(MemberContext context)
         {
             var attribute = context.Descriptor.GetAttribute<SearchBarAttribute>();
-            return attribute == null ? null : new CollectionSearchState(context.Inspector.PrimaryTarget, attribute);
+            return attribute == null
+                ? context.Inspector.SearchState
+                : new CollectionSearchState(context.Inspector.PrimaryValueTarget, attribute);
         }
 
         private void HandleSearchFieldChanged(ChangeEvent<string> change)
