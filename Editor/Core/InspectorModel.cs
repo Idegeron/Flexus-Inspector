@@ -167,16 +167,22 @@ namespace Flexus.Inspector.Editor
         public SerializedObject SerializedObject { get; }
         public UnityEngine.Object[] Targets { get; }
         public UnityEngine.Object PrimaryTarget => Targets.Length == 0 ? null : Targets[0];
+        public object[] ValueTargets { get; }
+        public object PrimaryValueTarget => ValueTargets.Length == 0 ? null : ValueTargets[0];
         public TypeDescriptor Type { get; }
         public VisualElement Root { get; }
+        internal CollectionSearchState SearchState { get; }
 
         internal InspectorContext(SerializedObject serializedObject, UnityEngine.Object[] targets,
-            TypeDescriptor type, VisualElement root)
+            TypeDescriptor type, VisualElement root, object[] valueTargets = null,
+            CollectionSearchState searchState = null)
         {
             SerializedObject = serializedObject;
             Targets = targets;
+            ValueTargets = valueTargets ?? targets.Cast<object>().ToArray();
             Type = type;
             Root = root;
+            SearchState = searchState;
         }
 
         public void RecordUndo(string name)

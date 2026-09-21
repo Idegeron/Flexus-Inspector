@@ -30,7 +30,7 @@ namespace Flexus.Inspector.Editor
         {
             void Refresh()
             {
-                var target = context.Inspector.PrimaryTarget;
+                var target = context.Inspector.PrimaryValueTarget;
                 var visible = true;
                 var enabled = true;
 
@@ -152,7 +152,7 @@ namespace Flexus.Inspector.Editor
                 {
                     var resolved = color.Color;
                     if (!string.IsNullOrEmpty(color.DynamicMember) &&
-                        MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget,
+                        MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget,
                             color.DynamicMember, out var value, out _) && value is Color dynamicColor)
                         resolved = dynamicColor;
                     element.style.color = resolved;
@@ -205,7 +205,7 @@ namespace Flexus.Inspector.Editor
             {
                 element.TrackPropertyValue(context.SerializedProperty, changedProperty =>
                 {
-                    foreach (var target in context.Inspector.Targets)
+                    foreach (var target in context.Inspector.ValueTargets)
                         MemberSourceResolver.Invoke(target, onValueChanged.MethodName, Array.Empty<object>(),
                             out var ignoredResult, out var ignoredError);
                 });
@@ -218,7 +218,7 @@ namespace Flexus.Inspector.Editor
                     var current = context.Value.GetValue();
                     if (Equals(previous, current)) return;
                     previous = current;
-                    foreach (var target in context.Inspector.Targets)
+                    foreach (var target in context.Inspector.ValueTargets)
                         MemberSourceResolver.Invoke(target, onValueChanged.MethodName, Array.Empty<object>(),
                             out var ignoredResult, out var ignoredError);
                 }).Every(150);
@@ -228,7 +228,7 @@ namespace Flexus.Inspector.Editor
         private static string ResolveText(MemberContext context, string text, bool dynamic)
         {
             if (!dynamic) return text ?? string.Empty;
-            return MemberSourceResolver.TryGetValue(context.Inspector.PrimaryTarget, text, out var value, out _)
+            return MemberSourceResolver.TryGetValue(context.Inspector.PrimaryValueTarget, text, out var value, out _)
                 ? value?.ToString() ?? string.Empty
                 : text ?? string.Empty;
         }

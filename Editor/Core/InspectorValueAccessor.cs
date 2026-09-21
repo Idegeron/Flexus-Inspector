@@ -66,9 +66,9 @@ namespace Flexus.Inspector.Editor
             if (context.SerializedProperty != null && targetIndex == 0)
             {
                 try { return context.SerializedProperty.boxedValue; }
-                catch { return GetReflectionValue(context.Inspector.Targets[targetIndex]); }
+                catch { return GetReflectionValue(context.Inspector.ValueTargets[targetIndex]); }
             }
-            return GetReflectionValue(context.Inspector.Targets[targetIndex]);
+            return GetReflectionValue(context.Inspector.ValueTargets[targetIndex]);
         }
 
         public void SetValue(object value, string undoName = "Inspector Change")
@@ -91,7 +91,7 @@ namespace Flexus.Inspector.Editor
             }
             else
             {
-                foreach (var target in context.Inspector.Targets)
+                foreach (var target in context.Inspector.ValueTargets)
                     SetReflectionValue(target, value);
                 context.Inspector.MarkDirty();
             }
@@ -102,11 +102,11 @@ namespace Flexus.Inspector.Editor
             if (customBackend != null) return customBackend.HasMixedValues(context);
             if (context.SerializedProperty != null)
                 return context.SerializedProperty.hasMultipleDifferentValues;
-            if (context.Inspector.Targets.Length < 2)
+            if (context.Inspector.ValueTargets.Length < 2)
                 return false;
-            var first = GetReflectionValue(context.Inspector.Targets[0]);
-            for (var index = 1; index < context.Inspector.Targets.Length; index++)
-                if (!Equals(first, GetReflectionValue(context.Inspector.Targets[index]))) return true;
+            var first = GetReflectionValue(context.Inspector.ValueTargets[0]);
+            for (var index = 1; index < context.Inspector.ValueTargets.Length; index++)
+                if (!Equals(first, GetReflectionValue(context.Inspector.ValueTargets[index]))) return true;
             return false;
         }
 

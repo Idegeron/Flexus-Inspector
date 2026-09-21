@@ -71,6 +71,49 @@ namespace Flexus.Inspector.Editor
             return root;
         }
 
+        internal static bool AddManagedReferenceMembers(
+            SerializedProperty property,
+            object owner,
+            VisualElement root,
+            CollectionSearchState search = null)
+        {
+            if (owner == null)
+            {
+                return false;
+            }
+
+            var type = InspectorMetadataCache.Get(owner.GetType());
+            var properties = InspectorVisuals.DirectChildren(property)
+                .ToDictionary(child => child.name, child => child.Copy());
+            var targets = property.serializedObject.targetObjects;
+            var inspector = new InspectorContext(property.serializedObject, targets,
+                type, root, new[] { owner }, search);
+            var groups = CreateGroups(type, root);
+
+            foreach (var descriptor in type.Members)
+            {
+                var child = descriptor.Kind == InspectorMemberKind.Field &&
+                            properties.TryGetValue(descriptor.Name, out var found)
+                    ? found
+                    : null;
+                var context = new MemberContext(inspector, descriptor, child);
+                var element = CreateMember(context);
+                if (child != null)
+                    element.TrackPropertyValue(child, _ => inspector.NotifyChanged());
+                if (type.ReadOnly && descriptor.Kind != InspectorMemberKind.Method)
+                    element.SetEnabled(false);
+
+                element.AddToClassList("flexus-managed-reference__field");
+                if (!string.IsNullOrEmpty(descriptor.GroupPath) &&
+                    groups.TryGetValue(descriptor.GroupPath, out var group))
+                    group.Add(element, descriptor.TabName);
+                else
+                    root.Add(element);
+            }
+
+            return type.Members.Count > 0;
+        }
+
         private static MemberElement CreateMember(MemberContext context)
         {
             var element = new MemberElement(context);

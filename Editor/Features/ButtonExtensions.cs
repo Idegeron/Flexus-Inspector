@@ -112,7 +112,7 @@ namespace Flexus.Inspector.Editor
                     attribute.ConfirmationMessage, "Run", "Cancel")) return;
 
             context.Inspector.RecordUndo(method.Name);
-            foreach (var target in context.Inspector.Targets)
+            foreach (var target in context.Inspector.ValueTargets)
             {
                 try { method.Invoke(method.IsStatic ? null : target, values); }
                 catch (Exception exception) { Debug.LogException(exception.GetBaseException()); }
@@ -134,10 +134,10 @@ namespace Flexus.Inspector.Editor
             var button = new Button(() =>
             {
                 context.Inspector.RecordUndo(attribute.MethodName);
-                foreach (var target in context.Inspector.Targets)
+                foreach (var target in context.Inspector.ValueTargets)
                 {
                     if (!MemberSourceResolver.Invoke(target, attribute.MethodName, Array.Empty<object>(), out _, out var error))
-                        Debug.LogError(error, target);
+                        Debug.LogError(error, target as UnityEngine.Object);
                 }
                 context.Inspector.MarkDirty();
             }) { text = string.IsNullOrEmpty(attribute.Label) ? attribute.MethodName : attribute.Label };

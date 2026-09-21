@@ -20,6 +20,7 @@ namespace Flexus.Inspector.Editor
         private readonly VisualElement body = new VisualElement();
         private readonly CollectionSearchState _search;
         private string lastTypeName;
+        private long lastReferenceId;
 
         public ManagedReferenceElement(
             SerializedProperty property, 
@@ -51,7 +52,7 @@ namespace Flexus.Inspector.Editor
         {
             property.serializedObject.UpdateIfRequiredOrScript();
             var current = property.managedReferenceFullTypename ?? string.Empty;
-            if (current == lastTypeName) return;
+            if (current == lastTypeName && property.managedReferenceId == lastReferenceId) return;
             Rebuild();
         }
 
@@ -59,6 +60,7 @@ namespace Flexus.Inspector.Editor
         {
             property.serializedObject.UpdateIfRequiredOrScript();
             lastTypeName = property.managedReferenceFullTypename ?? string.Empty;
+            lastReferenceId = property.managedReferenceId;
             header.Clear();
             body.Clear();
 
@@ -91,40 +93,14 @@ namespace Flexus.Inspector.Editor
                 return;
             }
 
-            var children = InspectorVisuals.DirectChildren(property).ToArray();
-            if (children.Length == 0)
+            if (!UIInspectorBuilder.AddManagedReferenceMembers(property,
+                    property.managedReferenceValue, body, _search))
             {
                 body.Add(InspectorVisuals.EmptyState("This type has no serialized fields."));
                 FieldColumnLayoutController.RequestRefresh(this);
                 return;
             }
 
-            foreach (var child in children)
-            {
-                var reflectedField = InspectorVisuals.SerializedField(actualType, child.name);
-                if (child.isArray && child.propertyType != SerializedPropertyType.String)
-                {
-                    var settings = reflectedField?.GetCustomAttributes(typeof(ListDrawerSettingsAttribute), true)
-                        .OfType<ListDrawerSettingsAttribute>().FirstOrDefault() ?? new ListDrawerSettingsAttribute();
-                    var list = new SerializedListElement(child, reflectedField?.FieldType ?? typeof(List<object>),
-                        child.displayName, settings, _search);
-                    list.AddToClassList("flexus-managed-reference__field");
-                    body.Add(list);
-                }
-                else if (child.propertyType == SerializedPropertyType.ManagedReference)
-                {
-                    var reference = new ManagedReferenceElement(child,
-                        reflectedField?.FieldType ?? typeof(object), child.displayName, search: _search);
-                    reference.AddToClassList("flexus-managed-reference__field");
-                    body.Add(reference);
-                }
-                else
-                {
-                    var field = DropdownFieldFactory.CreateSerializedOrDefault(child);
-                    field.AddToClassList("flexus-managed-reference__field");
-                    body.Add(field);
-                }
-            }
             body.Bind(property.serializedObject);
             FieldColumnLayoutController.RequestRefresh(this);
         }
