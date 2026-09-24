@@ -19,6 +19,7 @@ namespace Flexus.Inspector.Editor
         private readonly VisualElement header = new VisualElement();
         private readonly VisualElement body = new VisualElement();
         private readonly CollectionSearchState _search;
+        private readonly Func<MemberDescriptor, bool> memberFilter;
         private string lastTypeName;
         private long lastReferenceId;
 
@@ -29,7 +30,8 @@ namespace Flexus.Inspector.Editor
             bool showPicker = true, 
             Action<Type> typeChanged = null, 
             bool showHeader = true,
-            CollectionSearchState search = null)
+            CollectionSearchState search = null,
+            Func<MemberDescriptor, bool> memberFilter = null)
         {
             this.property = property.Copy();
             this.declaredType = declaredType ?? typeof(object);
@@ -38,6 +40,7 @@ namespace Flexus.Inspector.Editor
             this.showHeader = showHeader;
             this.typeChanged = typeChanged;
             _search = search;
+            this.memberFilter = memberFilter;
             AddToClassList("flexus-managed-reference");
             header.AddToClassList("flexus-managed-reference__header");
             body.AddToClassList("flexus-managed-reference__body");
@@ -94,7 +97,7 @@ namespace Flexus.Inspector.Editor
             }
 
             if (!UIInspectorBuilder.AddManagedReferenceMembers(property,
-                    property.managedReferenceValue, body, _search))
+                    property.managedReferenceValue, body, _search, memberFilter))
             {
                 body.Add(InspectorVisuals.EmptyState("This type has no serialized fields."));
                 FieldColumnLayoutController.RequestRefresh(this);

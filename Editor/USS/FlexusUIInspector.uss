@@ -895,8 +895,19 @@
     padding-right: 0;
 }
 
+.flexus-managed-reference--body-only {
+    background-color: transparent;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
 .flexus-managed-reference--body-only > .flexus-managed-reference__body {
+    padding-left: 0;
+    padding-right: 0;
     padding-top: 0;
+    padding-bottom: 0;
 }
 
 .flexus-table__rows,
