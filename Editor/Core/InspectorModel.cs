@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -37,13 +38,62 @@ namespace Flexus.Inspector.Editor
             DeclarationIndex = declarationIndex;
             Attributes = attributes;
             var displaySource = member.Name.TrimStart('_');
-            DisplayName = ObjectNames.NicifyVariableName(string.IsNullOrEmpty(displaySource) ? member.Name : displaySource);
+            DisplayName = NicifyVariableName(
+                string.IsNullOrEmpty(displaySource) ? member.Name : displaySource);
             Order = attributes.OfType<PropertyOrderAttribute>().FirstOrDefault()?.Order ?? declarationIndex;
             GroupPath = attributes.OfType<GroupAttribute>().FirstOrDefault()?.Path;
             TabName = attributes.OfType<TabAttribute>().FirstOrDefault()?.Name;
             var label = attributes.OfType<LabelTextAttribute>().FirstOrDefault();
             if (label != null && !label.Dynamic)
                 DisplayName = label.Text;
+        }
+
+        private static string NicifyVariableName(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            var result = new StringBuilder(value.Length + 8);
+
+            for (var i = 0; i < value.Length; i++)
+            {
+                var character = value[i];
+
+                if (character == '_')
+                {
+                    if (result.Length > 0 && result[result.Length - 1] != ' ')
+                    {
+                        result.Append(' ');
+                    }
+
+                    continue;
+                }
+
+                var previous = i > 0 ? value[i - 1] : '\0';
+                var next = i + 1 < value.Length ? value[i + 1] : '\0';
+                var startsWord = result.Length > 0 &&
+                                 result[result.Length - 1] != ' ' &&
+                                 (char.IsUpper(character) &&
+                                     (char.IsLower(previous) ||
+                                      char.IsDigit(previous) ||
+                                      char.IsUpper(previous) && char.IsLower(next)) ||
+                                  char.IsDigit(character) && char.IsLetter(previous));
+
+                if (startsWord)
+                {
+                    result.Append(' ');
+                }
+
+                result.Append(character);
+            }
+
+            var nicified = result.ToString().Trim();
+
+            return nicified.Length == 0
+                ? string.Empty
+                : char.ToUpperInvariant(nicified[0]) + nicified.Substring(1);
         }
 
         public T GetAttribute<T>() where T : Attribute => Attributes.OfType<T>().FirstOrDefault();

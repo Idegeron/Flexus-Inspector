@@ -75,7 +75,8 @@ namespace Flexus.Inspector.Editor
             SerializedProperty property,
             object owner,
             VisualElement root,
-            CollectionSearchState search = null)
+            CollectionSearchState search = null,
+            Func<MemberDescriptor, bool> memberFilter = null)
         {
             if (owner == null)
             {
@@ -88,9 +89,12 @@ namespace Flexus.Inspector.Editor
             var targets = property.serializedObject.targetObjects;
             var inspector = new InspectorContext(property.serializedObject, targets,
                 type, root, new[] { owner }, search);
-            var groups = CreateGroups(type, root);
+            IReadOnlyList<MemberDescriptor> members = memberFilter == null
+                ? type.Members
+                : type.Members.Where(memberFilter).ToArray();
+            var groups = CreateGroups(type, root, members);
 
-            foreach (var descriptor in type.Members)
+            foreach (var descriptor in members)
             {
                 var child = descriptor.Kind == InspectorMemberKind.Field &&
                             properties.TryGetValue(descriptor.Name, out var found)
@@ -111,7 +115,7 @@ namespace Flexus.Inspector.Editor
                     root.Add(element);
             }
 
-            return type.Members.Count > 0;
+            return members.Count > 0;
         }
 
         private static MemberElement CreateMember(MemberContext context)
@@ -135,10 +139,31 @@ namespace Flexus.Inspector.Editor
             return element;
         }
 
-        private static Dictionary<string, GroupHost> CreateGroups(TypeDescriptor type, VisualElement root)
+        private static Dictionary<string, GroupHost> CreateGroups(
+            TypeDescriptor type,
+            VisualElement root,
+            IReadOnlyList<MemberDescriptor> members = null)
         {
             var result = new Dictionary<string, GroupHost>();
-            var descriptors = type.Groups.OrderBy(group => Depth(group.Path)).ToArray();
+            var groupPaths = new HashSet<string>();
+
+            members ??= type.Members;
+
+            for (var i = 0; i < members.Count; i++)
+            {
+                var path = members[i].GroupPath;
+
+                while (!string.IsNullOrEmpty(path))
+                {
+                    groupPaths.Add(path);
+                    path = ParentPath(path);
+                }
+            }
+
+            var descriptors = type.Groups
+                .Where(group => groupPaths.Contains(group.Path))
+                .OrderBy(group => Depth(group.Path))
+                .ToArray();
             foreach (var descriptor in descriptors)
             {
                 var host = new GroupHost(descriptor);
